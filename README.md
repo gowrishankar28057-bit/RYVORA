@@ -1,5 +1,4 @@
 # RYVORA
-# RYVORA
 
 ### Intelligence that protects every ride.
 
