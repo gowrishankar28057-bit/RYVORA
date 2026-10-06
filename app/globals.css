@@ -48,53 +48,61 @@
   }
 }
 
-:root {
-  color-scheme: light;
+/*
+ * Base element styles live in the `base` cascade layer so that Tailwind
+ * utilities (e.g. `text-white` on a heading inside a navy band) always win.
+ * Unlayered rules would beat every utility regardless of specificity.
+ */
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background: #ffffff;
+    color: var(--color-body);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    color: var(--color-navy);
+    letter-spacing: -0.02em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
 }
 
-html {
-  -webkit-text-size-adjust: 100%;
-  -webkit-tap-highlight-color: transparent;
-}
-
-body {
-  background: #ffffff;
-  color: var(--color-body);
-  font-family: var(--font-sans);
-  font-feature-settings: "cv11", "ss01";
-}
-
-h1, h2, h3, h4 {
-  font-family: var(--font-display);
-  color: var(--color-navy);
-  letter-spacing: -0.02em;
-}
-
-:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: 2px;
-  border-radius: 8px;
-}
-
-.tabular {
+/* Project helpers as real utilities, so they sort with Tailwind and accept variants. */
+@utility tabular {
   font-variant-numeric: tabular-nums;
 }
 
-.no-scrollbar {
+@utility no-scrollbar {
   scrollbar-width: none;
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
-.bg-grid {
+@utility bg-grid {
   background-image:
     linear-gradient(to right, rgb(22 119 255 / 0.06) 1px, transparent 1px),
     linear-gradient(to bottom, rgb(22 119 255 / 0.06) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
-.pb-safe {
+@utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
 

@@ -8,7 +8,9 @@ export type CheckId =
   | "bike-connected"
   | "bike-imu"
   | "phone-sensors"
-  | "communication";
+  | "communication"
+  /** Advisory only, raised when GPS is off. Never part of `checks`. */
+  | "location";
 
 export interface ReadinessCheck {
   id: CheckId;
@@ -108,7 +110,7 @@ export function evaluateReadiness(s: SystemSnapshot): Readiness {
   const warnings = checks.filter((c) => !c.essential && !c.passed);
   if (s.phone.gps === "unavailable") {
     warnings.push({
-      id: "communication",
+      id: "location",
       label: "Location unavailable",
       passed: false,
       essential: false,

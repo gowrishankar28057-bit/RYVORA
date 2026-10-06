@@ -12,7 +12,8 @@ import { SimulatorPanel } from "./simulator-panel";
 
 export function ResponsiveShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { readiness, ride, setSimulatorOpen } = useTelemetry();
+  const { snapshot, readiness, ride, setSimulatorOpen, simulatorAvailable } = useTelemetry();
+  const sourceLabel = snapshot.source.label;
   const statusTone = ride.active ? "info" : readiness.state === "ready" ? "success" : readiness.state === "degraded" ? "warning" : "critical";
   const statusText = ride.active ? "Monitoring ride" : readiness.state === "ready" ? "Ready to ride" : readiness.state === "degraded" ? "Degraded" : "Not ready";
 
@@ -53,22 +54,24 @@ export function ResponsiveShell({ children }: { children: React.ReactNode }) {
         </nav>
         <div className="space-y-3">
           <div className="rounded-2xl border border-line bg-surface p-3">
-            <div className="flex items-center gap-2 text-xs font-semibold text-navy">
+            <div role="status" aria-live="polite" className="flex items-center gap-2 text-xs font-semibold text-navy">
               <StatusDot tone={statusTone} pulse={ride.active} />
               {statusText}
             </div>
             <div className="mt-2 flex items-center justify-between">
-              <SimLabel>Simulated hardware</SimLabel>
+              <SimLabel>{sourceLabel}</SimLabel>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setSimulatorOpen(true)}
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-line text-sm font-semibold text-navy hover:border-brand hover:bg-brand-50"
-          >
-            <SlidersHorizontal className="size-4" aria-hidden />
-            Hardware simulator
-          </button>
+          {simulatorAvailable && (
+            <button
+              type="button"
+              onClick={() => setSimulatorOpen(true)}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-line text-sm font-semibold text-navy hover:border-brand hover:bg-brand-50"
+            >
+              <SlidersHorizontal className="size-4" aria-hidden />
+              Hardware simulator
+            </button>
+          )}
         </div>
       </aside>
 
@@ -79,18 +82,24 @@ export function ResponsiveShell({ children }: { children: React.ReactNode }) {
             <Logo />
           </Link>
           <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1.5 rounded-full border border-line bg-white px-2.5 py-1 text-[11px] font-semibold text-navy">
+            <span
+              role="status"
+              aria-live="polite"
+              className="flex items-center gap-1.5 rounded-full border border-line bg-white px-2.5 py-1 text-[11px] font-semibold text-navy"
+            >
               <StatusDot tone={statusTone} pulse={ride.active} />
               {statusText}
             </span>
-            <button
-              type="button"
-              onClick={() => setSimulatorOpen(true)}
-              aria-label="Open hardware simulator"
-              className="grid size-10 place-items-center rounded-xl border border-line text-navy"
-            >
-              <SlidersHorizontal className="size-[18px]" aria-hidden />
-            </button>
+            {simulatorAvailable && (
+              <button
+                type="button"
+                onClick={() => setSimulatorOpen(true)}
+                aria-label="Open hardware simulator"
+                className="grid size-11 place-items-center rounded-xl border border-line text-navy"
+              >
+                <SlidersHorizontal className="size-[18px]" aria-hidden />
+              </button>
+            )}
           </div>
         </header>
 

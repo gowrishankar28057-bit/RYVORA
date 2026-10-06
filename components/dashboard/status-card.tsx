@@ -18,12 +18,14 @@ export function deviceRows(s: SystemSnapshot): Row[] {
   const helmetUp = s.helmet.connection !== "disconnected";
   const bikeUp = s.bike.connection !== "disconnected";
   const imuText = (h: SystemSnapshot["helmet"]["imu"]) => (h === "healthy" ? "Healthy" : h === "offline" ? "Offline" : h === "degraded" ? "Degraded" : "Error");
-  const imuTone = (h: SystemSnapshot["helmet"]["imu"]): Tone => (h === "healthy" ? "success" : h === "offline" ? "neutral" : "critical");
+  // IMU faults are advisory (readiness stays "degraded", not blocked), so they use amber — red is reserved for blockers.
+  const imuTone = (h: SystemSnapshot["helmet"]["imu"]): Tone => (h === "healthy" ? "success" : h === "offline" ? "neutral" : "warning");
+  const linkDown = s.phone.bluetooth === "unsupported" ? "Bluetooth unavailable" : s.phone.bluetooth !== "on" ? "Bluetooth off" : "Disconnected";
   const icon = (n: React.ReactNode) => n;
   return [
     {
       label: "Helmet",
-      value: helmetUp ? "Connected" : s.phone.bluetooth !== "on" ? "Bluetooth off" : "Disconnected",
+      value: helmetUp ? "Connected" : linkDown,
       tone: helmetUp ? "success" : "critical",
       icon: icon(<HelmetIcon className="size-[18px]" />),
       battery: s.helmet.batteryPct,
@@ -48,7 +50,7 @@ export function deviceRows(s: SystemSnapshot): Row[] {
     },
     {
       label: "Bike module",
-      value: bikeUp ? "Connected" : "Disconnected",
+      value: bikeUp ? "Connected" : linkDown,
       tone: bikeUp ? "success" : "critical",
       icon: <Motorbike className="size-[18px]" />,
       battery: s.bike.batteryPct,
@@ -155,7 +157,11 @@ export function StatusCard({
           <ul className="mt-4 space-y-2" aria-label="What to fix">
             {Array.from(new Set(readiness.blockers.map((b) => b.fix))).map((fix) => (
               <li key={fix} className="flex items-start gap-2.5 rounded-2xl border border-crit-line bg-white px-3.5 py-3 text-sm font-semibold text-navy">
-                {btOff ? <Bluetooth className="mt-0.5 size-4 shrink-0 text-crit" /> : <Unplug className="mt-0.5 size-4 shrink-0 text-crit" />}
+                {btOff ? (
+                  <Bluetooth className="mt-0.5 size-4 shrink-0 text-crit" aria-hidden />
+                ) : (
+                  <Unplug className="mt-0.5 size-4 shrink-0 text-crit" aria-hidden />
+                )}
                 {fix}
               </li>
             ))}
@@ -164,8 +170,8 @@ export function StatusCard({
         {readiness.blockers.length === 0 && readiness.warnings.length > 0 && (
           <ul className="mt-4 space-y-2">
             {readiness.warnings.map((w) => (
-              <li key={w.label} className="flex items-start gap-2.5 rounded-2xl border border-warn-line bg-white px-3.5 py-3 text-sm text-navy">
-                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warn" />
+              <li key={w.id} className="flex items-start gap-2.5 rounded-2xl border border-warn-line bg-white px-3.5 py-3 text-sm text-navy">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warn" aria-hidden />
                 <span>
                   <span className="font-semibold">{w.label}.</span> {w.fix}
                 </span>

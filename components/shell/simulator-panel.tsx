@@ -35,7 +35,7 @@ const GROUPS: { title: string; items: { key: keyof SimulatedDeviceState; label: 
 ];
 
 export function SimulatorPanel() {
-  const { simulatorOpen, setSimulatorOpen, device, setDevice, resetDevices } = useTelemetry();
+  const { simulatorOpen, setSimulatorOpen, device, setDevice, resetDevices, simulatorAvailable, snapshot } = useTelemetry();
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -72,14 +72,20 @@ export function SimulatorPanel() {
             type="button"
             onClick={() => setSimulatorOpen(false)}
             aria-label="Close"
-            className="grid size-10 shrink-0 place-items-center rounded-xl border border-line text-navy"
+            className="grid size-11 shrink-0 place-items-center rounded-xl border border-line text-navy"
           >
-            <X className="size-4" />
+            <X className="size-4" aria-hidden />
           </button>
         </div>
         <div className="flex-1 space-y-5 overflow-y-auto p-5">
+          {!simulatorAvailable && (
+            <p role="note" className="rounded-xl border border-warn-line bg-warn-bg p-3 text-sm text-warn">
+              <span className="font-semibold">Simulator unavailable with the configured telemetry source</span> ({snapshot.source.label}).
+              Switches are shown for reference only.
+            </p>
+          )}
           {GROUPS.map((g) => (
-            <fieldset key={g.title}>
+            <fieldset key={g.title} disabled={!simulatorAvailable}>
               <legend className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">{g.title}</legend>
               <div className="divide-y divide-line-soft">
                 {g.items.map((it) => (
@@ -90,6 +96,7 @@ export function SimulatorPanel() {
                     description={it.description}
                     checked={device[it.key]}
                     onChange={(v) => setDevice({ [it.key]: v })}
+                    disabled={!simulatorAvailable}
                   />
                 ))}
               </div>
@@ -97,7 +104,7 @@ export function SimulatorPanel() {
           ))}
         </div>
         <div className="border-t border-line p-5">
-          <Button variant="secondary" className="w-full" onClick={resetDevices}>
+          <Button variant="secondary" className="w-full" onClick={resetDevices} disabled={!simulatorAvailable}>
             <RotateCcw className="size-4" aria-hidden /> Reset to healthy
           </Button>
         </div>

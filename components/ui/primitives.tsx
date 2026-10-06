@@ -209,16 +209,18 @@ export function Toggle({
   label,
   description,
   id,
+  disabled = false,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   label: string;
   description?: string;
   id: string;
+  disabled?: boolean;
 }) {
   return (
-    <div className="flex min-h-12 items-center justify-between gap-4 py-1.5">
-      <label htmlFor={id} className="min-w-0 cursor-pointer">
+    <div className={cn("flex min-h-12 items-center justify-between gap-4 py-1.5", disabled && "opacity-60")}>
+      <label htmlFor={id} className={cn("min-w-0", disabled ? "cursor-not-allowed" : "cursor-pointer")}>
         <span className="block text-sm font-semibold text-navy">{label}</span>
         {description && <span className="block text-xs text-muted">{description}</span>}
       </label>
@@ -227,9 +229,10 @@ export function Toggle({
         type="button"
         role="switch"
         aria-checked={checked}
+        disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn(
-          "relative h-7 w-12 shrink-0 rounded-full border transition-colors",
+          "relative h-7 w-12 shrink-0 rounded-full border transition-colors disabled:cursor-not-allowed",
           checked ? "border-brand bg-brand" : "border-line bg-line-soft",
         )}
       >

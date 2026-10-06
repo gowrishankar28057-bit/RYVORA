@@ -5,11 +5,15 @@ import { useSyncExternalStore } from "react";
 import { ArrowRight, ChevronRight, FileSearch, Power, ShieldCheck, Stethoscope } from "lucide-react";
 import { StatusCard } from "@/components/dashboard/status-card";
 import { EventCard } from "@/components/history/event-card";
+import { summarizeHistory } from "@/components/history/history-model";
 import { buttonClass, Card, CardHeader } from "@/components/ui/primitives";
 import { RIDE_HISTORY } from "@/data/rides";
 import { RIDER } from "@/data/rider";
 import { useTelemetry } from "@/lib/telemetry/telemetry-provider";
 import { cn } from "@/lib/utils/cn";
+
+/** Computed from the ride history + crash confidence engine, never hard-coded. */
+const FALSE_TRIGGERS_REJECTED = summarizeHistory(RIDE_HISTORY).falseTriggersRejected;
 
 const noop = () => () => {};
 
@@ -73,7 +77,7 @@ export function HomeDashboard() {
             {[
               { k: "Rides", v: RIDER.stats.rides },
               { k: "Distance", v: `${RIDER.stats.distanceKm.toLocaleString("en-IN")} km` },
-              { k: "False triggers rejected", v: 3 },
+              { k: "False triggers rejected", v: FALSE_TRIGGERS_REJECTED },
             ].map((s) => (
               <div key={s.k} className="rounded-2xl bg-surface p-3">
                 <dt className="text-[11px] leading-tight text-muted">{s.k}</dt>

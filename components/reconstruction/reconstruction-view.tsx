@@ -1,41 +1,46 @@
-import { Clock, MapPin, Motorbike, Smartphone } from "lucide-react";
-import { HelmetIcon } from "@/components/brand/icons";
-import { SensorCharts } from "@/components/reconstruction/sensor-charts";
-import { EventTimeline } from "@/components/safety/event-timeline";
-import { VerdictCard } from "@/components/safety/crash-confidence-panel";
-import { Card, CardHeader, SimLabel } from "@/components/ui/primitives";
-import { INCIDENT } from "@/data/rider";
-import { assessEvent } from "@/lib/engine/crash-confidence";
-import { SCENARIO_MAP } from "@/lib/simulation/scenarios";
-import { downsample } from "@/lib/simulation/series";
-import { fmtDateTime } from "@/lib/utils/format";
+import { cn } from "@/lib/utils/cn";
+import { AiExplanation, SignalContributionTable } from "./incident-analysis";
+import { DeviceStatusCard, IncidentHeader } from "./incident-header";
+import { buildIncident, tableRows } from "./incident-model";
+import { IncidentWorkspace } from "./incident-workspace";
 
+/** Fully deterministic, so it is derived once per module instance. */
+const RECON_INCIDENT = buildIncident();
+const TABLE_ROWS = tableRows(RECON_INCIDENT);
+
+/**
+ * Desktop crash-reconstruction dashboard (SIMULATED incident).
+ * Mobile: everything stacks. `lg`+: richer two-column chart grid. `xl`+: 12-column layout.
+ * `compact` trims chrome so it fits the jury demo's laptop frame.
+ */
 export function ReconstructionView({ compact = false }: { compact?: boolean }) {
-  const s = SCENARIO_MAP["severe-crash"];
-  const a = assessEvent(s.input);
-  const data = downsample(s.series(), 2);
+  const incident = RECON_INCIDENT;
+  const gap = compact ? "gap-4" : "gap-4 sm:gap-5";
   return (
-    <div className="space-y-5">
-      <div className="grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
-        <VerdictCard assessment={a} compact={compact} />
-        <Card className="p-5">
-          <CardHeader kicker={INCIDENT.id} title="Incident summary" action={<SimLabel>Simulated incident</SimLabel>} />
-          <dl className="mt-4 grid grid-cols-2 gap-3 text-sm lg:grid-cols-4">
-            <div><dt className="flex items-center gap-1 text-xs text-muted"><Clock className="size-3.5" />Timestamp</dt><dd className="font-bold text-navy">{fmtDateTime(INCIDENT.occurredAt)} IST</dd></div>
-            <div><dt className="flex items-center gap-1 text-xs text-muted"><MapPin className="size-3.5" />Approx. location</dt><dd className="font-bold text-navy">{INCIDENT.location.label}</dd></div>
-            <div><dt className="text-xs text-muted">Classification</dt><dd className="font-bold text-crit">Severe crash</dd></div>
-            <div><dt className="text-xs text-muted">Device status</dt><dd className="flex flex-wrap gap-2 font-semibold text-navy"><span className="flex items-center gap-1 text-crit"><HelmetIcon className="size-3.5" />lost T+0.1</span><span className="flex items-center gap-1 text-ok"><Motorbike className="size-3.5" />ok</span><span className="flex items-center gap-1 text-ok"><Smartphone className="size-3.5" />ok</span></dd></div>
-          </dl>
-        </Card>
+    <div className={cn("grid min-w-0 grid-cols-1", gap)}>
+      <div className={cn("grid min-w-0 grid-cols-1 xl:grid-cols-12", gap)}>
+        <IncidentHeader incident={incident} compact={compact} className="min-w-0 xl:col-span-8" />
+        <DeviceStatusCard devices={incident.devices} className="min-w-0 xl:col-span-4" />
       </div>
-      <Card className="p-5"><CardHeader kicker="Digital black box" title="Understand the seconds that mattered." /><div className="mt-4"><EventTimeline entries={s.timeline} horizontal /></div></Card>
-      <SensorCharts data={data} />
-      <Card className="p-5">
-        <CardHeader kicker="AI explanation" title="Why RYVORA raised confidence" />
-        <p className="mt-2 text-sm text-body">Crash confidence increased because a helmet impact, rapid motorcycle deceleration, bike rotation and phone movement occurred within the same event window.</p>
-        <ul className="mt-3 space-y-1 text-sm text-body">{a.reasons.map((r) => <li key={r}>• {r}</li>)}</ul>
-        <p className="mt-3 text-xs text-muted">Automated, rule-based summary of simulated sensor data. Not a medical, legal or insurance determination.</p>
-      </Card>
+
+      <IncidentWorkspace
+        timeline={incident.timeline}
+        samples={incident.samples}
+        markers={incident.markers}
+        tableRows={TABLE_ROWS}
+        helmetLinkLostT={incident.helmetLinkLostT}
+        bufferSeconds={incident.bufferSeconds}
+        compact={compact}
+      />
+
+      <div className={cn("grid min-w-0 grid-cols-1 xl:grid-cols-12", gap)}>
+        <SignalContributionTable assessment={incident.assessment} classLabel={incident.classLabel} className="min-w-0 xl:col-span-7" />
+        <AiExplanation
+          explanation={incident.explanation}
+          severe={incident.assessment.eventClass === "SEVERE_CRASH"}
+          className="min-w-0 xl:col-span-5"
+        />
+      </div>
     </div>
   );
 }

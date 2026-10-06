@@ -75,20 +75,40 @@ export function VerdictCard({ assessment, compact = false }: { assessment: Crash
   const tone = CLASS_TONE[assessment.eventClass];
   const severe = assessment.eventClass === "SEVERE_CRASH";
   const label = severe ? "POSSIBLE SEVERE CRASH" : EVENT_LABELS[assessment.eventClass].toUpperCase();
+  const ringTone = severe ? "critical" : tone === "warning" ? "warning" : "info";
   return (
     <div
       className={cn(
-        "rounded-3xl border p-5",
+        "rounded-3xl border",
+        "p-4 sm:p-5",
         severe ? "border-crit-line bg-crit-bg" : tone === "warning" ? "border-warn-line bg-warn-bg" : "border-line bg-white",
       )}
       role="status"
       aria-live="polite"
     >
-      <div className="flex items-center gap-4">
-        <ConfidenceRing value={assessment.confidence} size={compact ? 84 : 104} stroke={compact ? 8 : 9} tone={severe ? "critical" : tone === "warning" ? "warning" : "info"} label="Confidence" />
+      <div className="flex items-center gap-3 sm:gap-4">
+        {compact ? (
+          <ConfidenceRing value={assessment.confidence} size={84} stroke={8} tone={ringTone} label="Confidence" />
+        ) : (
+          <>
+            {/* Below `sm` the full card uses the compact ring so long labels still fit at 360 px. display:none hides the inactive copy from assistive tech. */}
+            <span className="shrink-0 sm:hidden">
+              <ConfidenceRing value={assessment.confidence} size={84} stroke={8} tone={ringTone} label="Confidence" />
+            </span>
+            <span className="hidden shrink-0 sm:block">
+              <ConfidenceRing value={assessment.confidence} size={104} stroke={9} tone={ringTone} label="Confidence" />
+            </span>
+          </>
+        )}
         <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Classification</p>
-          <p className={cn("font-[family-name:var(--font-display)] font-extrabold leading-tight", compact ? "text-lg" : "text-2xl", severe ? "text-crit" : "text-navy")}>
+          <p
+            className={cn(
+              "break-words font-[family-name:var(--font-display)] font-extrabold leading-tight",
+              compact ? "text-lg" : "text-lg min-[400px]:text-xl sm:text-2xl",
+              severe ? "text-crit" : "text-navy",
+            )}
+          >
             {label}
           </p>
           <p className="mt-0.5 text-sm font-semibold text-navy tabular">{Math.round(assessment.confidence * 100)}% confidence</p>

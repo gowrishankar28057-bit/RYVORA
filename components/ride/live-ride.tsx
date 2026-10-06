@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { CircleStop, FlaskConical, Power, ShieldCheck } from "lucide-react";
 import { RideHud } from "@/components/ride/ride-hud";
+import { useSafetySettings } from "@/components/profile/safety-settings";
+import { locationAttachment, type LocationAttachment } from "@/components/safety/emergency-workflow";
 import { IncidentOverlay } from "@/components/safety/incident-overlay";
 import { DeviceStatusGrid } from "@/components/dashboard/status-card";
 import { Button, buttonClass, Card, CardHeader, SimLabel } from "@/components/ui/primitives";
@@ -21,9 +23,11 @@ const SIM_EVENTS = [
 ];
 
 export function LiveRide() {
-  const { snapshot, ride, endRide, readiness } = useTelemetry();
+  const { snapshot, lastSeen, ride, endRide, readiness } = useTelemetry();
+  const { riderCheckSeconds, autoEscalation } = useSafetySettings();
   const [toast, setToast] = useState<CrashAssessment | null>(null);
-  const [incident, setIncident] = useState<CrashAssessment | null>(null);
+  // The location is captured when the incident fires, so the attached fix does not drift afterwards.
+  const [incident, setIncident] = useState<{ assessment: CrashAssessment; location: LocationAttachment } | null>(null);
 
   if (!ride.active) {
     return (
@@ -60,7 +64,7 @@ export function LiveRide() {
     const scenario = SCENARIO_MAP[id];
     if (!scenario) return;
     const a = assessEvent(scenario.input);
-    if (a.emergency) setIncident(a);
+    if (a.emergency) setIncident({ assessment: a, location: locationAttachment(snapshot, lastSeen) });
     else {
       setToast(a);
       setTimeout(() => setToast((t) => (t === a ? null : t)), 4500);
@@ -122,8 +126,11 @@ export function LiveRide() {
 
       {incident && (
         <IncidentOverlay
-          confidencePct={confidencePct(incident)}
-          locationAvailable={snapshot.phone.gps === "locked"}
+          confidencePct={confidencePct(incident.assessment)}
+          countdownSec={riderCheckSeconds}
+          autoEscalate={autoEscalation}
+          locationAvailable={incident.location.live}
+          location={incident.location}
           onClose={() => setIncident(null)}
         />
       )}

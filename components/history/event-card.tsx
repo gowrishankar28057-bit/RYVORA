@@ -3,11 +3,11 @@ import { Activity, ChevronRight, OctagonAlert, ShieldCheck, TriangleAlert, Waves
 import { HelmetIcon } from "@/components/brand/icons";
 import { RiskBadge } from "@/components/safety/risk-badge";
 import { SimLabel } from "@/components/ui/primitives";
+import { confidencePct } from "@/lib/engine/crash-confidence";
 import type { RideEvent } from "@/lib/types/events";
 import { cn } from "@/lib/utils/cn";
-import { fmtDateTime } from "@/lib/utils/format";
-import { assessEvent, confidencePct } from "@/lib/engine/crash-confidence";
-import { getScenario } from "@/lib/simulation/scenarios";
+import { fmt } from "@/lib/utils/format";
+import { assessEntry, fmtIstShort, fmtIstTime } from "./history-model";
 
 function iconFor(e: RideEvent) {
   switch (e.scenarioId) {
@@ -20,24 +20,29 @@ function iconFor(e: RideEvent) {
     case "pothole":
       return { Icon: Waves, cls: "bg-brand-50 text-brand-600" };
     case "bike-fall":
+    case "minor":
       return { Icon: TriangleAlert, cls: "bg-warn-bg text-warn" };
     default:
       return { Icon: e.kind === "ride" ? Activity : ShieldCheck, cls: "bg-surface text-navy" };
   }
 }
 
-export function EventCard({ event, compact = false }: { event: RideEvent; compact?: boolean }) {
+function metricFor(event: RideEvent): string {
+  if (event.kind === "ride") return `${fmt(event.distanceKm, 1)} km`;
+  const a = assessEntry(event);
+  if (!a) return "—";
+  if (a.eventClass === "HELMET_DROP" && !a.emergency) return "False trigger rejected";
+  return `${confidencePct(a)}% confidence`;
+}
+
+/**
+ * One ride or safety event in a list. Renders an `<li>` — place it inside a `<ul>`.
+ * `timeOnly` drops the date when the list is already grouped by day.
+ */
+export function EventCard({ event, compact = false, timeOnly = false }: { event: RideEvent; compact?: boolean; timeOnly?: boolean }) {
   const { Icon, cls } = iconFor(event);
-  const scenario = getScenario(event.scenarioId);
-  const assessment = scenario && event.kind === "event" ? assessEvent(scenario.input) : null;
-  const metric =
-    event.kind === "ride"
-      ? `${event.distanceKm?.toFixed(1)} km`
-      : event.scenarioId === "helmet-drop"
-        ? "False trigger rejected"
-        : assessment
-          ? `${confidencePct(assessment)}% confidence`
-          : "";
+  const metric = metricFor(event);
+  const when = timeOnly ? `${fmtIstTime(event.occurredAt)} IST` : fmtIstShort(event.occurredAt);
 
   return (
     <li>
@@ -57,16 +62,24 @@ export function EventCard({ event, compact = false }: { event: RideEvent; compac
             {!compact && event.scenarioId === "severe-crash" && <SimLabel>Simulation</SimLabel>}
           </span>
           <span className="mt-0.5 block truncate text-xs text-muted">
-            {fmtDateTime(event.occurredAt)} · {event.locationLabel}
+            {when} · {event.locationLabel}
           </span>
+          {!compact && (
+            <span className="mt-2 flex flex-wrap items-center gap-2 sm:hidden">
+              <RiskBadge risk={event.risk} />
+              <span className="text-xs font-bold text-navy tabular">{metric}</span>
+            </span>
+          )}
         </span>
         <span className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
           <span className="text-sm font-bold text-navy tabular">{metric}</span>
           {!compact && <RiskBadge risk={event.risk} />}
         </span>
-        <span className="flex shrink-0 flex-col items-end sm:hidden">
-          <span className="text-xs font-bold text-navy tabular">{metric}</span>
-        </span>
+        {compact && (
+          <span className="flex shrink-0 flex-col items-end sm:hidden">
+            <span className="text-xs font-bold text-navy tabular">{metric}</span>
+          </span>
+        )}
         <ChevronRight className="size-4 shrink-0 text-muted transition-transform group-hover:translate-x-0.5" aria-hidden />
       </Link>
     </li>
